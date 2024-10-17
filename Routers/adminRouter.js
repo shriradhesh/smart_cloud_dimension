@@ -36,9 +36,13 @@ const upload = require('../upload')
 
                                                   /* service Section */
       // Api for add_service
-      router.post('/add_service', adminController.add_service)
+      router.post('/add_service',upload.single('icon') ,  adminController.add_service)
       // Api for get_services
       router.get('/get_services', adminController.get_services)
+      // Api for update_service
+      router.put('/update_service/:service_id', upload.single('service_icon'), adminController.update_service)
+      // Api for delete_service
+      router.delete('/delete_service/:service_id', adminController.delete_service)
    
 
                                                 /* Customer section */
@@ -64,6 +68,34 @@ const upload = require('../upload')
       // Api for all_enquiry_export
       router.get('/all_enquiry_export', adminController.all_enquiry_export)
 
+                                              /* cms Section  */
 
+      router.post('/cms_home_why_you_choose_services', adminController.cms_home_why_you_choose_services)
+      // Api for get_cms_home_why_you_choose_services
+      router.get('/get_cms_home_why_you_choose_services', adminController.get_cms_home_why_you_choose_services)
+      // Api for cms_home_service_smart_servelliance_system
+      router.post('/cms_home_service_smart_servelliance_system', upload.single('image'), adminController.cms_home_service_smart_servelliance_system)
+      //Api for get_cms_home_service_smart_servelliance_system
+      router.get('/get_cms_home_service_smart_servelliance_system', adminController.get_cms_home_service_smart_servelliance_system)
+      // Api for cms_home_service_smart_attandence_system
+      router.post('/cms_home_service_smart_attandence_system', upload.single('image'), adminController.cms_home_service_smart_attandence_system)
+      // Api for get_cms_home_service_smart_attendence_system
+      router.get('/get_cms_home_service_smart_attendence_system', adminController.get_cms_home_service_smart_attendence_system)
+      // Api for cms_home_service_smart_Access_system
+      router.post('/cms_home_service_smart_Access_system', upload.single('image'), adminController.cms_home_service_smart_Access_system)
+      // Api for get_cms_home_service_smart_Access_system
+      router.get('/get_cms_home_service_smart_Access_system', adminController.get_cms_home_service_smart_Access_system)
+      // Api for cms_home_service_smart_office_system
+      router.post('/cms_home_service_smart_office_system', upload.single('image'), adminController.cms_home_service_smart_office_system)
+      // Api for get_cms_home_service_smart_office_system
+      router.get('/get_cms_home_service_smart_office_system', adminController.get_cms_home_service_smart_office_system)
+      // Api for cms_home_service_smart_security_system
+      router.post('/cms_home_service_smart_security_system', upload.single('image'), adminController.cms_home_service_smart_security_system)
+      // Api for get_cms_home_service_smart_security_system
+      router.get('/get_cms_home_service_smart_security_system', adminController.get_cms_home_service_smart_security_system)
+      // Api for cms_home_service_smart_home_system
+      router.post('/cms_home_service_smart_home_system', upload.single('image') , adminController.cms_home_service_smart_home_system)
+      // Api for get_cms_home_service_smart_home_system
+      router.get('/get_cms_home_service_smart_home_system', adminController.get_cms_home_service_smart_home_system)
 
 module.exports = router

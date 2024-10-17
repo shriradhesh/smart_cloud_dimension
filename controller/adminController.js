@@ -11,6 +11,14 @@ const cus_enq_Model = require('../models/cus_Enquiry')
 const enginner_assign_enq_model = require('../models/engineer_assing_enq')
 const ExcelJs = require("exceljs");
 const cus_bill_Model = require('../models/cus_bill')
+const engineer_rating_model = require('../models/engineer_rating')
+const cms_home_why_you_choose_services_Model = require('../models/cms_home_why_you_choose_services')
+const cms_home_service_smart_servelliance_system_Model = require('../models/cms_home_service_smart_servelliance_system')
+const cms_home_service_smart_attendence_system_Model = require('../models/cms_home_service_Smart_Attendance_Systems')
+const cms_home_service_smart_Access_system_Model = require('../models/cms_home_service_smart_access')
+const cms_home_service_smart_office_system_Model = require('../models/cms_home_service_smart_office_system')
+const cms_home_service_smart_security_system_Model = require('../models/cms_home_service_smart_security_system')
+const cms_home_service_smart_home_system_Model = require('../models/cms_home_service_smart_home_section')
 
 
                                                  /* Admin Panel */
@@ -127,7 +135,7 @@ const getadmin =  async ( req , res )=> {
 const updateAdmin  = async ( req , res )=> {
     try {
             const adminId = req.params.adminId
-            const { name , email } = req.body
+            const { full_name , email } = req.body
             // check for adminId
        if(!adminId)
        {
@@ -153,7 +161,7 @@ const updateAdmin  = async ( req , res )=> {
            // check for details and uodate
 
            
-           if (name) admin.name = name;
+           if (full_name) admin.full_name = full_name;
            if (email) admin.email = email;
 
            // Update profile image only if a new file is uploaded
@@ -529,7 +537,7 @@ await admin.save();
 
                       // check for already exist engineer
 
-                      const exist_engg = await engineer_model.findOne({ email })
+                      const exist_engg = await engineer_model.findOne({ phone_no , email  })
                       if(exist_engg)
                       {
                         return res.status(400).json({
@@ -682,41 +690,60 @@ await admin.save();
         }
 
     // Api for get all engineers 
-       const get_all_engineers = async( req , res)=> {
-              try {
-                        // check for all engineer
-
-                        const all_engg = await engineer_model.find({}).sort({ createdAt : -1 }).lean()
-
-                        if(!all_engg)
-                        {
-                            return res.status(400).json({
-                                 success : false ,
-                                 message : 'No Enginner profile found'
-                            })
-                        }
-
-                        return res.status(200).json({
-                             success : true ,
-                             message : 'ALL Engineers',
-                             Details : all_engg.map((e)=> ({
-                                   Engineer_id  : e.Engineer_id,
-                                   Engineer_name : e.name,
-                                   Engineer_email : e.email,
-                                   Engineer_phoneNo : e.phone_no,
-                                   Engineer_password : e.password,
-                                   Engineer_status : e.status,
-                                   Engineer_profile : e.profileImage
-                             }))
-                        })
-              } catch (error) {
-                   return res.status(500).json({
-                      success : false ,
-                      message : 'Server error',
-                      error_message : error.message
-                   })
-              }
-       }
+    const get_all_engineers = async (req, res) => {
+        try {
+            // Fetch all engineers sorted by creation date
+            const all_engg = await engineer_model.find({}).sort({ createdAt: -1 }).lean();
+    
+            if (!all_engg || all_engg.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No Engineer profile found'
+                });
+            }
+    
+            // Process each engineer
+            const engineers_with_ratings = await Promise.all(
+                all_engg.map(async (engineer) => {
+                    // Fetch ratings for the current engineer
+                    const ratings = await engineer_rating_model.find({ engineer_id: engineer.Engineer_id });
+    
+                    // Calculate the average rating
+                    let avgRating = 0;
+                    if (ratings.length > 0) {
+                        const totalRating = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+                        avgRating = totalRating / ratings.length;
+                    }
+    
+                    // Return the engineer details along with the average rating
+                    return {
+                        Engineer_id: engineer.Engineer_id,
+                        Engineer_name: engineer.name,
+                        Engineer_email: engineer.email,
+                        Engineer_phoneNo: engineer.phone_no,
+                        Engineer_password: engineer.password,
+                        Engineer_status: engineer.status,
+                        Engineer_profile: engineer.profileImage,
+                        Engineer_rating: avgRating.toFixed(1), 
+                    };
+                })
+            );
+    
+            // Send response with all engineers and their ratings
+            return res.status(200).json({
+                success: true,
+                message: 'ALL Engineers',
+                Details: engineers_with_ratings
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server error',
+                error_message: error.message
+            });
+        }
+    };
+    
 
        // Api for get particular engineer profile
           const get_Engineer = async( req , res )=> {
@@ -742,10 +769,29 @@ await admin.save();
                             })
                         }
 
+                         // Fetch the ratings for the engineer
+                        const ratings = await engineer_rating_model.find({ engineer_id: engg_id });
+
+                        // Calculate the average rating
+                        let avgRating = 0;
+                        if (ratings.length > 0) {
+                            const totalRating = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+                            avgRating = totalRating / ratings.length;
+                        }
+
                         return res.status(200).json({
                              success : true,
                              message : 'Enginner Details',
-                             Detail : Engineer
+                             Detail : {
+                                rating : avgRating,
+                                _id : Engineer._id,
+                                name : Engineer.name,
+                                Engineer_id : Engineer.Engineer_id,
+                                email : Engineer.email,
+                                phone_no : Engineer.phone_no,
+                                profileImage : Engineer.profileImage,
+                                status : Engineer.status
+                             }
                         })
                    } catch (error) {
                        return res.status(500).json({
@@ -819,7 +865,7 @@ await admin.save();
         // Api for add Service
          const add_service = async ( req , res)=> {
                try {
-                      const { service_name , service_price  } = req.body
+                      const { service_name , service_price , service_description } = req.body
                       
                       // check for required field
                       if(!service_name)
@@ -833,7 +879,14 @@ await admin.save();
                       {
                         return res.status(400).json({
                              success : false ,
-                             message : 'Service Name Required'
+                             message : 'Service price Required'
+                        })
+                      }
+                      if(!service_description)
+                      {
+                        return res.status(400).json({
+                             success : false ,
+                             message : 'Service Description Required'
                         })
                       }
 
@@ -848,9 +901,10 @@ await admin.save();
                             })
                         }
 
+                        const icon = req.file.filename
                         // add new service
                          const new_service = new services_model({
-                            service_name , service_price
+                            service_name , service_price , service_description , service_icon : icon
                          })
                          await new_service.save()
 
@@ -884,12 +938,16 @@ await admin.save();
                             })
                         }
 
+                        
+
                         return res.status(200).json({
                              success : true,
                              message : 'All Services',
                              all_services : all_services.map((s)=> ({
                                       service_name : s.service_name,
                                       service_price : s.service_price,
+                                      service_description : s.service_description,
+                                      service_icon : s.service_icon || '',
                                       service_id : s._id
                              }))
                         })
@@ -902,7 +960,117 @@ await admin.save();
                 }
            }
 
+           // Api for update services
+               const update_service = async ( req , res )=> {
+                    try {
+                            const service_id = req.params.service_id
+                            const { service_name , service_price , service_description } = req.body
 
+
+                            // check for service_id
+                            if(!service_id)
+                            {
+                                return res.status(400).json({
+                                      success : false ,
+                                      message : 'Service Id Required'
+                                })
+                            }
+
+                            // check for service
+                            const service = await services_model.findOne({ _id : service_id })
+
+                            if(!service)
+                            {
+                                return res.status(400).json({
+                                       success : false ,
+                                       message : 'Service Not Found'
+                                })
+                            }
+                                     if(service_name)
+                                        {
+                                            service.service_name = service_name
+                                        }   
+                            
+                                     if(service_price)
+                                        {
+                                            service.service_price = service_price
+                                        }   
+                            
+                                     if(service_description)
+                                        {
+                                            service.service_description = service_description
+                                        }  
+                                        
+                                        if(req.file)
+                                        {
+                                            service.service_icon = req.file.filename
+                                        }
+                                       
+                                        await service.save()
+
+                                        return res.status(200).json({
+                                              success : true ,
+                                              message : 'Service Update Successfully'
+                                        })
+                    } catch (error) {
+                          return res.status(500).json({
+                               success : false ,
+                               message : 'Server error',
+                               error_message : error.message
+                          })
+                    }
+               }
+
+        // Api for delete Service
+        const delete_service = async (req, res) => {
+            try {
+              const service_id = req.params.service_id;
+          
+              // Check for service_id
+              if (!service_id) {
+                return res.status(400).json({
+                  success: false,
+                  message: 'Service Id Required',
+                });
+              }
+          
+              // Check for service
+              const service = await services_model.findOne({ _id: service_id });
+              if (!service) {
+                return res.status(400).json({
+                  success: false,
+                  message: 'Service Not Found',
+                });
+              }
+          
+              // Check if any pending customer enquiries exist for the service
+              const check_service_enq = await cus_enq_Model.find({
+                'services.service_id': service_id,
+                status: { $ne: 'Confirmed' },
+              });
+          
+              if (check_service_enq.length > 0) {
+                return res.status(400).json({
+                  success: false,
+                  message: 'You cannot delete the service as customers have pending enquiries.',
+                });
+              }
+          
+              await service.deleteOne();
+          
+              return res.status(200).json({
+                success: true,
+                message: 'Service Deleted Successfully',
+              });
+            } catch (error) {
+              return res.status(500).json({
+                success: false,
+                message: 'Server error',
+                error_message: error.message,
+              });
+            }
+          };
+          
                                                                     /* Customer section */
          // Api for get all Customer
 
@@ -1452,17 +1620,721 @@ await admin.save();
             }
         };
         
+                                                          /* CMS Section  */
+
+    // Api for cms_home_why_you_choose_services_Model
+          const cms_home_why_you_choose_services = async( req , res )=> {
+                try {
+                      const { Heading , Description } = req.body
+                      // check for exist details
+                         const exist_detail = await cms_home_why_you_choose_services_Model.findOne({ })
+                         if(exist_detail)
+                         {
+                                exist_detail.Heading = Heading
+                                exist_detail.Description = Description
+
+                                await exist_detail.save()
+                                return res.status(200).json({
+                                       success : true ,
+                                       message : 'Details Updated Successfully'
+                                })
+                         }
+
+                         else
+                         {
+                               // check for required fields
+                                
+                               if(!Heading)
+                               {
+                                return res.status(400).json({
+                                       success : false ,
+                                       message : 'Heading Required'
+                                })
+                               }
+
+                               if(!Description)
+                               {
+                                return res.status(400).json({
+                                       success : false ,
+                                       message : 'Description Required'
+                                })
+                               }
+
+                               // create new data
+                               const new_data = new cms_home_why_you_choose_services_Model({
+                                      Heading,
+                                      Description
+                               })
+                               await new_data.save()
+
+                               return res.status(200).json({
+                                     success : true ,
+                                     message : 'New Details added Successfully'
+                               })
+
+                         }
+                } catch (error) {
+                     return res.status(500).json({
+                           success : false ,
+                           message : 'Server error',
+                           error_message : error.message
+                     })
+                }
+          }
+
+  // Api for get details of cms_home_why_you_choose_services
+
+                   const get_cms_home_why_you_choose_services = async( req , res )=> {
+                        try {
+                                    // check for details
+                                    const get_details = await cms_home_why_you_choose_services_Model.findOne({ })
+                                    if(!get_details)
+                                    {
+                                        return res.status(400).json({
+                                              success : false ,
+                                              message : 'No Details found'
+                                        })
+                                    }
+
+                                    return res.status(200).json({
+                                          success : true ,
+                                          message : 'cms home why you choose services Details',
+                                          Details : {
+                                            Heading : get_details.Heading,
+                                            Description : get_details.Description,
+                                            Id : get_details._id
+                                          }
+                                    })
+                        } catch (error) {
+                            return res.status(500).json({
+                                success : false ,
+                                message : 'Server error',
+                                error_message : error.message
+                          })
+                        }
+                   }
+
+
+    // Api for cms_home_service_smart_servelliance_system
+
+    const cms_home_service_smart_servelliance_system = async( req , res )=> {
+        try {
+              const { Heading , Description } = req.body
+              // check for exist details
+                 const exist_detail = await cms_home_service_smart_servelliance_system_Model.findOne({ })
+                 if(exist_detail)
+                 {
+                        exist_detail.Heading = Heading
+                        exist_detail.Description = Description
+                        if(req.file)
+                        {
+                              exist_detail.image = req.file.filename
+                        }
+
+                        await exist_detail.save()
+                        return res.status(200).json({
+                               success : true ,
+                               message : 'Details Updated Successfully'
+                        })
+                 }
+
+                 else
+                 {
+                       // check for required fields
+                        
+                       if(!Heading)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading Required'
+                        })
+                       }
+
+                       if(!Description)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description Required'
+                        })
+                       }
+
+                            const image = req.file.filename
+                       // create new data
+                       const new_data = new cms_home_service_smart_servelliance_system_Model({
+                              Heading,
+                              Description,
+                              image 
+                       })
+                       await new_data.save()
+
+                       return res.status(200).json({
+                             success : true ,
+                             message : 'New Details added Successfully'
+                       })
+
+                 }
+        } catch (error) {
+             return res.status(500).json({
+                   success : false ,
+                   message : 'Server error',
+                   error_message : error.message
+             })
+        }
+  }
+
+
+  // Api for get cms_home_service_smart_servelliance_system
+  const get_cms_home_service_smart_servelliance_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_servelliance_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart servelliance system Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+
+   // Api for smart attendence system
            
+
+    const cms_home_service_smart_attandence_system = async( req , res )=> {
+        try {
+              const { Heading , Description } = req.body
+              // check for exist details
+                 const exist_detail = await cms_home_service_smart_attendence_system_Model.findOne({ })
+                 if(exist_detail)
+                 {
+                        exist_detail.Heading = Heading
+                        exist_detail.Description = Description
+                        if(req.file)
+                        {
+                              exist_detail.image = req.file.filename
+                        }
+
+                        await exist_detail.save()
+                        return res.status(200).json({
+                               success : true ,
+                               message : 'Details Updated Successfully'
+                        })
+                 }
+
+                 else
+                 {
+                       // check for required fields
+                        
+                       if(!Heading)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading Required'
+                        })
+                       }
+
+                       if(!Description)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description Required'
+                        })
+                       }
+
+                            const image = req.file.filename
+                       // create new data
+                       const new_data = new cms_home_service_smart_attendence_system_Model({
+                              Heading,
+                              Description,
+                              image 
+                       })
+                       await new_data.save()
+
+                       return res.status(200).json({
+                             success : true ,
+                             message : 'New Details added Successfully'
+                       })
+
+                 }
+        } catch (error) {
+             return res.status(500).json({
+                   success : false ,
+                   message : 'Server error',
+                   error_message : error.message
+             })
+        }
+  }
+
+  const get_cms_home_service_smart_attendence_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_attendence_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart Attendance system Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+
+ // Api for smart Access  system
+           
+
+ const cms_home_service_smart_Access_system = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_home_service_smart_Access_system_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    if(req.file)
+                    {
+                          exist_detail.image = req.file.filename
+                    }
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                        const image = req.file.filename
+                   // create new data
+                   const new_data = new cms_home_service_smart_Access_system_Model({
+                          Heading,
+                          Description,
+                          image 
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+
+
+// Api for cms_home_service_smart_Access_system
+const get_cms_home_service_smart_Access_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_Access_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart Access System Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+const cms_home_service_smart_office_system = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_home_service_smart_office_system_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    if(req.file)
+                    {
+                          exist_detail.image = req.file.filename
+                    }
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                        const image = req.file.filename
+                   // create new data
+                   const new_data = new cms_home_service_smart_office_system_Model({
+                          Heading,
+                          Description,
+                          image 
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+// Api for cms_home_service_smart_office_system
+const get_cms_home_service_smart_office_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_office_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart Office System Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+
+const cms_home_service_smart_security_system = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_home_service_smart_security_system_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    if(req.file)
+                    {
+                          exist_detail.image = req.file.filename
+                    }
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                        const image = req.file.filename
+                   // create new data
+                   const new_data = new cms_home_service_smart_security_system_Model({
+                          Heading,
+                          Description,
+                          image 
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+// Api for get cms home service smart security system
+    
+const get_cms_home_service_smart_security_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_security_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart Security System Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+
+const cms_home_service_smart_home_system = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_home_service_smart_home_system_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    if(req.file)
+                    {
+                          exist_detail.image = req.file.filename
+                    }
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                        const image = req.file.filename
+                   // create new data
+                   const new_data = new cms_home_service_smart_home_system_Model({
+                          Heading,
+                          Description,
+                          image 
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+const get_cms_home_service_smart_home_system = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_home_service_smart_home_system_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'smart Security Home Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        image : get_details.image,
+                        Id : get_details._id
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
 
 module.exports = {
     login , getadmin , updateAdmin , change_admin_password ,
     otpGenerate , verify_otp , reset_password ,
     add_engineer ,get_all_engineers ,get_Engineer ,
     deleteEngg ,
-    add_service , get_services , get_all_Customer ,
+    add_service , get_services , update_service , delete_service , get_all_Customer ,
     admin_dashboard , get_all_enquiry ,
     assing_enqRequest_to_engineer , get_particular_enq_detail,
 
     export_engineer , export_customer ,
-    all_enquiry_export 
-}
+    all_enquiry_export ,
+
+    // cms Section
+
+    cms_home_why_you_choose_services , get_cms_home_why_you_choose_services ,
+    cms_home_service_smart_servelliance_system , get_cms_home_service_smart_servelliance_system ,
+    cms_home_service_smart_attandence_system , get_cms_home_service_smart_attendence_system ,
+    cms_home_service_smart_Access_system , get_cms_home_service_smart_Access_system,
+    cms_home_service_smart_office_system , get_cms_home_service_smart_office_system,
+    cms_home_service_smart_security_system , get_cms_home_service_smart_security_system ,
+    cms_home_service_smart_home_system , get_cms_home_service_smart_home_system
+} 

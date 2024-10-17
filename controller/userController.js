@@ -9,6 +9,8 @@ const cus_bill_Model = require('../models/cus_bill')
 const htmlPdf = require('html-pdf-node');
 const path  = require('path')
 const fs = require('fs')
+const engineer_rating_model = require('../models/engineer_rating')
+const Engg_otp_Model = require('../models/engg_otp_model')
 
 
 
@@ -225,6 +227,238 @@ const engineer_login = async ( req , res)=> {
                   });
                 }
               };
+
+
+    // Api for forget  password
+
+     
+
+      function isValidEmail(email) {
+        // email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    function generateOTP() {
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        return otp.slice(0, 4);
+    }
+
+// Api for opt generate
+const engg_otpGenerate = async ( req , res )=> {
+   try {
+         const { email } = req.body
+         // check for email
+         if (!email || !isValidEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid email is required"
+            });
+        }
+
+
+         // check for Engineer
+         const engg = await engineer_model.findOne({ email : email })
+         if(!engg)
+         {
+               return res.status(400).json({
+                 success : false ,
+                 message : 'Engineer not found with these email'
+               })
+         }
+
+         const otp = generateOTP();
+
+            // Save the OTP in the otpModel
+            const otpData = {
+                engineer_id : engg.Engineer_id,
+                otp: otp
+            };
+            await Engg_otp_Model.create(otpData);
+              const EnggEmailContent = `<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Forgot Password - Reset Your Password</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4;">
+                <div style="width: 80%; max-width: 600px; margin: 40px auto; padding: 30px; background: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <section>
+                        <h2 style="color: #333; font-size: 24px; text-align: center; margin-bottom: 20px; font-weight: normal;">Dear ${engg.name}</h2>
+                        <p style="color: #666; font-size: 16px; text-align: center; margin-bottom: 20px; line-height: 1.5;">We received a request to reset your password. To proceed, please use the following One-Time Password (OTP):</p>
+                        <div style="background-color: #f9f9f9; text-align: center; padding: 20px; border-radius: 8px; margin: 0 auto 30px; max-width: 200px; border: 5px groove black;">
+                            <div style="font-size: 36px; font-weight: bold; color: #333; letter-spacing: 2px;">${otp}</div>
+                        </div>
+                        <p style="color: #666; font-size: 14px; text-align: center; margin-bottom: 20px;">This OTP will expire in 2 minutes.</p>
+                        <p style="color: #666; font-size: 16px; text-align: center; margin-bottom: 20px;">If you didn't request a password reset, you can ignore this email.</p>
+                        <p style="color: #666; font-size: 16px; text-align: center; margin-bottom: 20px;">Thank you!</p>
+                        <div style="text-align: center; margin-top: 40px; color: #999; font-size: 14px; border-top: 1px solid #e0e0e0; padding-top: 20px;">&copy; Smart Cloud Dimension. All rights reserved.</div>
+                    </section>
+                </div>
+            </body>
+            </html>
+            `
+            await user_Email (engg.email, `OTP Email`, EnggEmailContent);
+            await engg.save();
+
+               return res.status(200).json({
+                    success : true ,
+                    message : `An Otp has been send to your email`
+               })
+   } catch (error) {
+       return res.status(500).json({
+          success : false ,
+          message : 'server error',
+          error_message : error.message
+       })
+   }
+
+}
+
+// Api for otp verification
+   const engg_verify_otp = async ( req , res )=> {
+     try {
+            const { otp } = req.body
+      // check for otp required
+      if(!otp)
+      { 
+          return res.status(400).json({
+                success : false ,
+                message : 'opt Required'
+          })
+      }
+
+      // check for otp
+
+      const check_otp = await Engg_otp_Model.findOne({
+         otp : otp
+      })
+
+      if(!check_otp)
+      {
+          return res.status(400).json({
+             success : false ,
+             message : 'Invalid otp or expired'
+          })
+      }
+
+      return res.status(200).json({
+         success : true ,
+         message : 'OTP Verified Successfully',
+         Engineer_id : check_otp.engineer_id
+      })
+
+     } catch (error) {
+          return res.status(500).json({
+              success : false ,
+              message : 'server error',
+              error_message : error.message
+          })
+     }
+   }
+
+// Api for recet password
+
+  const engg_reset_password = async ( req , res )=> {
+      try {
+             const engineer_id = req.params.engineer_id
+             const { newPassword , confirmPassword } = req.body
+        
+             // check for required fileds
+             if(!engineer_id)
+             {
+                  return res.status(400).json({
+                     success : false ,
+                     message : 'engineer_id required'
+                  })
+             }
+
+             if(!newPassword)
+             {
+                 return res.status(400).json({
+                     success : false ,
+                     message : 'new Password required'
+                 })
+             }
+
+             if(!confirmPassword)
+             {
+                 return res.status(400).json({
+                     success : false ,
+                     message : 'confirm password required'
+                 })
+             }
+
+             // check for Engineer
+             const engg = await engineer_model.findOne({ Engineer_id : engineer_id })
+             if(!engg)
+             {
+                 return res.status(400).json({
+                     success : false,
+                     message : 'Engineer not found'
+                 })
+             }
+
+               // check for confirmPassword 
+                if(newPassword !== confirmPassword)
+                {
+                    return res.status(400).json({
+                         success : false ,
+                         message : 'confirm Password is not matched'
+                    })
+                }
+
+                // bcrypt the new password
+
+                const hashedNewPassword = await bcrypt.hash(newPassword , 10)
+                engg.password = hashedNewPassword
+                
+                
+                // check for otp
+              await Engg_otp_Model.deleteOne({ engineer_id : engineer_id })
+            
+
+                const engineerEmailContent = `<p style="text-align: center; font-size: 20px; color: #333; font-weight: 600; margin-bottom: 30px;">Congratulations! Your Password Has Been Reset</p>
+            <p style="text-align: center; font-size: 16px; color: #666; margin-bottom: 20px;">Here are your account details:</p>
+
+            <div style="display: flex; justify-content: center; align-items: center;">
+                <div style="width: auto; max-width: 500px; background-color: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); padding: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="background-color: #fff;">
+                            <td style="padding: 14px 20px; text-align: left; font-weight: 600; font-size: 16px; border-bottom: 1px solid #e0e0e0;">Email:</td>
+                            <td style="padding: 14px 20px; text-align: left; font-size: 16px; border-bottom: 1px solid #e0e0e0;">${engg.email}</td>
+                        </tr>
+                         <tr style="background-color: #fff;">
+                            <td style="padding: 14px 20px; text-align: left; font-weight: 600; font-size: 16px; border-bottom: 1px solid #e0e0e0;">Phone No :</td>
+                            <td style="padding: 14px 20px; text-align: left; font-size: 16px; border-bottom: 1px solid #e0e0e0;">${engg.phone_no}</td>
+                        </tr>
+                        <tr style="background-color: #fff;">
+                            <td style="padding: 14px 20px; text-align: left; font-weight: 600; font-size: 16px;">Password:</td>
+                            <td style="padding: 14px 20px; text-align: left; font-size: 16px;">${newPassword}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+                        `
+
+    await user_Email(engg.email, `Reset Password`, engineerEmailContent );
+      await engg.save()
+     
+              return res.status(200).json({
+                 success : true ,
+                 message : 'Engineer Password reset successfully'
+              })
+      } catch (error) {
+          return res.status(500).json({
+             success : false ,
+             message : 'server error',
+             error_message : error.message
+          })
+      }
+  }
+
+      
               
                                                                             /*  Customer SEction */
             
@@ -660,7 +894,7 @@ const engineer_login = async ( req , res)=> {
               });
           }
 
-                // get bi
+                
              
                               
           // Map through each enquiry to get details based on Enq_no
@@ -1090,14 +1324,96 @@ const engineer_login = async ( req , res)=> {
         console.error('Error updating bill:', error);
         return res.status(500).json({
             success: false,
-            message: 'Internal Server Error',
+            message: 'Server error',
             error: error.message
         });
     }
 };
 
 
-              
+                                                                            /* Rating section */
+                                                                            
+        // Api to give engineer rating
+        const give_engineer_rating = async ( req , res )=> {
+               try {
+                       const {customer_id , engineer_id }  = req.params
+                       const rating = req.body.rating
+                       
+                       // check for required fields
+
+                       if(!customer_id)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Customer Id Required'
+                        })
+                       }
+
+                       if(!engineer_id)
+                        {
+                         return res.status(400).json({
+                                success : false ,
+                                message : ' Engineer Id Required'
+                         })
+                        }
+
+                        // check for engineer 
+
+                        const engineer = await engineer_model.findOne({ Engineer_id : engineer_id })
+                        if(!engineer)
+                        {
+                            return res.status(400).json({
+                                   success : false ,
+                                   message : 'Engineer Profile not Found'
+                            })
+                        }
+
+                           // Check if the rating is within the valid range
+                            if (rating < 0 || rating > 5) {
+                                return res.status(400).json({
+                                    success: false,
+                                    message: 'Rating should be in the range of 0 to 5'
+                                });
+                            }
+                     // Check if a rating and review already exist for this customer
+                let existingR = await engineer_rating_model.findOne({ customer_id , engineer_id });
+        
+                if (existingR) {
+                    // Update existing rating and review
+                    existingR.rating = rating;                    
+                    await existingR.save();
+
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Rating updated successfully'
+                    });
+                } else {
+                    // Create new record
+                    const newRR = new engineer_rating_model({
+                        customer_id,
+                        engineer_id,
+                        rating,
+                        
+                    });
+
+                    await newRR.save()
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Rating Added successfully'
+                    });
+                }
+
+                
+        
+                       
+               } catch (error) {
+                   return res.status(500).json({
+                        success : false ,
+                        message : 'Server error',
+                        error_message : error.message
+                   })
+               }
+        }
   
 
 
@@ -1106,7 +1422,10 @@ module.exports = {
     engineer_login , update_Enginner_detail , change_Engg_password , 
     customer_signup ,  customer_login , update_customer ,
     generate_enq , get_cus_enquiry , get_all_enquiry_of_engineer ,
-    update_cus_bill
+    update_cus_bill ,
+    give_engineer_rating , engg_otpGenerate , engg_verify_otp ,
+    engg_reset_password
+
     // accept_reject_cus_enq ,
 
 }

@@ -16,6 +16,12 @@ router.post('/change_Engg_password/:engg_id', userController.change_Engg_passwor
 router.get('/get_all_enquiry_of_engineer/:engineer_id', userController.get_all_enquiry_of_engineer)
 // Api for update_cus_bill
 router.post('/update_cus_bill/:engineer_id/:bill_no', userController.update_cus_bill)
+
+/*  Forget Password  */
+
+router.post('/engg_otpGenerate', userController.engg_otpGenerate)
+router.post('/engg_verify_otp', userController.engg_verify_otp)
+router.post('/engg_reset_password/:engineer_id', userController.engg_reset_password)
 // // Api for accept_reject_cus_enq
 // router.post('/accept_reject_cus_enq/:cus_id', userController.accept_reject_cus_enq)
 
@@ -38,6 +44,11 @@ router.put('/update_customer/:customer_id', upload.single('profileImage'), userC
 // Api for get_cus_enquiry
 router.get('/get_cus_enquiry/:customer_id', userController.get_cus_enquiry)
 
+
+                                                    /* Rating section */
+
+// Api for give_engineer_rating
+router.post('/give_engineer_rating/:customer_id/:engineer_id' , userController.give_engineer_rating)
 
 
 

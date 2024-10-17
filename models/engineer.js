@@ -14,6 +14,7 @@ const engineer_Schema = new mongoose.Schema({
          },
          phone_no : {
              type : Number
+             
          },
          profileImage : {
              type : String
@@ -23,6 +24,12 @@ const engineer_Schema = new mongoose.Schema({
                 enum : [0,1,2],
                 default : 1
          },
+
+         rating : {
+               type : Number,
+               default : 5
+               
+         }
 
        
 }, { timestamps : true } )

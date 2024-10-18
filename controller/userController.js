@@ -499,8 +499,12 @@ const engg_otpGenerate = async ( req , res )=> {
                                                 message : 'address Required'
                                         })
                                     }
-                                 
-                                    const profileImage = req.file.filename
+                                    let profileImage = ''
+                                 if(req.file)
+                                 {
+                                     profileImage = req.file.filename
+                                 }
+                                    
                                     const randomNumber = generateRandomNumber(4);
                                     const customer_id = `CUS-${randomNumber}`;
                                       // check for exist customer
@@ -1413,7 +1417,9 @@ const engg_otpGenerate = async ( req , res )=> {
                         error_message : error.message
                    })
                }
-        }
+        }   
+
+                                                          
   
 
 

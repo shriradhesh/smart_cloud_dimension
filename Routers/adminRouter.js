@@ -98,4 +98,21 @@ const upload = require('../upload')
       // Api for get_cms_home_service_smart_home_system
       router.get('/get_cms_home_service_smart_home_system', adminController.get_cms_home_service_smart_home_system)
 
+                                   /* Contact US */
+
+      router.post('/contact_us', adminController.contact_us)
+      router.get('/get_all_contact_us_inq', adminController.get_all_contact_us_inq)
+
+      router.post('/cms_contact_us_details', adminController.cms_contact_us_details)
+      // Api for get_cms_contact_us_details
+      router.get('/get_cms_contact_us_details', adminController.get_cms_contact_us_details)
+      // Api for cms_contact_for_inquiry
+      router.post('/cms_contact_for_inquiry', adminController.cms_contact_for_inquiry)
+      // Api for get_cms_contactof_inquiry
+      router.get('/get_cms_contactof_inquiry', adminController.get_cms_contactof_inquiry)
+      // Api for cms_contact_our_location
+      router.post('/cms_contact_our_location', adminController.cms_contact_our_location)
+      // Api for get_cms_contact_our_location
+      router.get('/get_cms_contact_our_location', adminController.get_cms_contact_our_location)
+
 module.exports = router

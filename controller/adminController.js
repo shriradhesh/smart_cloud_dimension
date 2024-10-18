@@ -19,6 +19,10 @@ const cms_home_service_smart_Access_system_Model = require('../models/cms_home_s
 const cms_home_service_smart_office_system_Model = require('../models/cms_home_service_smart_office_system')
 const cms_home_service_smart_security_system_Model = require('../models/cms_home_service_smart_security_system')
 const cms_home_service_smart_home_system_Model = require('../models/cms_home_service_smart_home_section')
+const contact_us_Model = require('../models/contact_us')
+const cms_contact_us_details_model = require('../models/cms_contact_details')
+const cms_contact_for_inquiry_Model = require('../models/cms_contact_for_inquiry')
+const cms_contact_our_location_Model = require('../models/cms_contact_our_location')
 
 
                                                  /* Admin Panel */
@@ -1128,7 +1132,6 @@ await admin.save();
                                const all_confirmed_enq = await cus_enq_Model.find({ status : 'Confirmed'})
                                 // check for all cancelled Enq
                                 const all_cancelled_enq = await cus_enq_Model.find({ status : 'Cancelled'})
-
 
                                 return res.status(200).json({
                                      success : true ,
@@ -2314,7 +2317,383 @@ const get_cms_home_service_smart_home_system = async( req , res )=> {
       })
     }
 }
+  
 
+const cms_contact_us_details = async( req , res )=> {
+    try {
+          const { Heading , Description , mail_at , mail ,
+            call_us_on , call , our_address , address , time_schedule ,
+            time
+           } = req.body
+          // check for exist details
+             const exist_detail = await cms_contact_us_details_model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                   
+                    exist_detail.mail_at = mail_at
+                    exist_detail.mail = mail
+                    
+                    exist_detail.call_us_on = call_us_on
+                    exist_detail.call = call
+                   
+                    exist_detail.our_address = our_address
+                    exist_detail.address = address
+
+                    exist_detail.time_schedule = time_schedule
+                    exist_detail.time = time
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                   // create new data
+                   const new_data = new cms_contact_us_details_model({
+                         
+                          Heading , Description , mail_at , mail ,
+                          call_us_on , call , our_address , address , time_schedule ,
+                          time
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+const get_cms_contact_us_details = async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_contact_us_details_model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'cms_contact_us Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                        mail_at : get_details.mail_at,
+                         mail : get_details.mail ,
+                         call_us_on : get_details.call_us_on,
+                         call : get_details.call ,
+                         our_address : get_details.our_address,
+                         address : get_details.address ,
+                         time_schedule : get_details.time_schedule,
+                         time : get_details.time ,
+
+       
+                        
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+const cms_contact_for_inquiry = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_contact_for_inquiry_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                      
+                   const new_data = new cms_contact_for_inquiry_Model({
+                          Heading,
+                          Description,
+                        
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+
+const get_cms_contactof_inquiry= async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_contact_for_inquiry_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'cms_contact_ for Inquiry Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                       
+
+       
+                        
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+const cms_contact_our_location = async( req , res )=> {
+    try {
+          const { Heading , Description } = req.body
+          // check for exist details
+             const exist_detail = await cms_contact_our_location_Model.findOne({ })
+             if(exist_detail)
+             {
+                    exist_detail.Heading = Heading
+                    exist_detail.Description = Description
+                    
+
+                    await exist_detail.save()
+                    return res.status(200).json({
+                           success : true ,
+                           message : 'Details Updated Successfully'
+                    })
+             }
+
+             else
+             {
+                   // check for required fields
+                    
+                   if(!Heading)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Heading Required'
+                    })
+                   }
+
+                   if(!Description)
+                   {
+                    return res.status(400).json({
+                           success : false ,
+                           message : 'Description Required'
+                    })
+                   }
+
+                      
+                   const new_data = new cms_contact_our_location_Model({
+                          Heading,
+                          Description,
+                        
+                   })
+                   await new_data.save()
+
+                   return res.status(200).json({
+                         success : true ,
+                         message : 'New Details added Successfully'
+                   })
+
+             }
+    } catch (error) {
+         return res.status(500).json({
+               success : false ,
+               message : 'Server error',
+               error_message : error.message
+         })
+    }
+}
+
+const get_cms_contact_our_location= async( req , res )=> {
+    try {
+                // check for details
+                const get_details = await cms_contact_our_location_Model.findOne({ })
+                if(!get_details)
+                {
+                    return res.status(400).json({
+                          success : false ,
+                          message : 'No Details found'
+                    })
+                }
+
+                return res.status(200).json({
+                      success : true ,
+                      message : 'cms_contact_ for location Details',
+                      Details : {
+                        Heading : get_details.Heading,
+                        Description : get_details.Description,
+                       
+
+       
+                        
+                      }
+                })
+    } catch (error) {
+        return res.status(500).json({
+            success : false ,
+            message : 'Server error',
+            error_message : error.message
+      })
+    }
+}
+
+ 
+                                                              /* Contact US page for website */
+
+        // Api for contact us 
+             const contact_us = async ( req , res )=> {
+                    try {
+                           const {first_name , last_name , email , phone_no , subject , message }= req.body
+                      // check for all required fields
+
+                      const requiredFields = ['first_name' , 'last_name' , 'email' , 'phone_no' , 'subject' , 'message']
+                      for(let field of requiredFields)
+                      {
+                            if(!req.body[field])
+                            {
+                                 return res.status(400).json({
+                                       success : false ,
+                                       message : `Required ${field.replace('_',' ')}`
+                                 })
+                            }
+                      }
+
+                         // const add new Inquiry
+
+                         const new_inq =   new contact_us_Model({
+                            first_name , last_name , email , phone_no , subject , message
+                         })
+                                await new_inq.save()
+
+                                return res.status(200).json({
+                                      success : true ,
+                                      message : 'Inquiry Generated Successfully'
+                                })
+
+                    } catch (error) {
+                         return res.status(500).json({
+                               success : false ,
+                               message : 'Server error',
+                               error_message : error.message
+                         })
+                    }
+             }
+
+
+             // Api for get all the contact us Inquiry details
+             const get_all_contact_us_inq = async ( req , res )=> {
+                   try {
+                          // check for contact inq
+                          const all_contact_inq = await contact_us_Model.find().sort({ createdAt : -1 }).lean()
+
+                          if(!all_contact_inq)
+                          {
+                            return res.status(400).json({
+                                  success : false ,
+                                  message : 'No Inquiry recived YET'
+                            })
+                          }
+
+                          return res.status(200).json({
+                               success : true ,
+                               message : 'All contact us Inquiry',
+                               details : all_contact_inq
+                          })
+                   } catch (error) {
+                      return res.status(500).json({
+                           success : false,
+                           message : 'Server error',
+                           error_message : error.message
+                      })
+                   }
+             }
 
 module.exports = {
     login , getadmin , updateAdmin , change_admin_password ,
@@ -2336,5 +2715,10 @@ module.exports = {
     cms_home_service_smart_Access_system , get_cms_home_service_smart_Access_system,
     cms_home_service_smart_office_system , get_cms_home_service_smart_office_system,
     cms_home_service_smart_security_system , get_cms_home_service_smart_security_system ,
-    cms_home_service_smart_home_system , get_cms_home_service_smart_home_system
+    cms_home_service_smart_home_system , get_cms_home_service_smart_home_system ,
+
+    //contact us 
+    contact_us , get_all_contact_us_inq , cms_contact_us_details ,
+    get_cms_contact_us_details , cms_contact_for_inquiry , get_cms_contactof_inquiry ,
+    cms_contact_our_location , get_cms_contact_our_location
 } 

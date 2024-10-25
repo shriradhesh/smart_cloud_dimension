@@ -19,7 +19,7 @@ const Engg_otp_Model = require('../models/engg_otp_model')
 
 const engineer_login = async ( req , res)=> {
     try {
-        const { phone_no, password } = req.body;
+        const { phone_no , password } = req.body;
         if (!phone_no) {
             return res.status(400).json({
                 success: false,
@@ -90,6 +90,27 @@ const engineer_login = async ( req , res)=> {
                             return res.status(400).json({
                                  success : false ,
                                  message : 'Engineer Id Required'
+                            })
+                          }
+                          if(!name)
+                          {
+                            return res.status(400).json({
+                                 success : false ,
+                                 message : 'name Required'
+                            })
+                          }
+                          if(!email)
+                          {
+                            return res.status(400).json({
+                                 success : false ,
+                                 message : 'email Required'
+                            })
+                          }
+                          if(!phone_no)
+                          {
+                            return res.status(400).json({
+                                 success : false ,
+                                 message : 'phone_no Required'
                             })
                           }
 
@@ -614,6 +635,37 @@ const engg_otpGenerate = async ( req , res )=> {
                                      message : 'Customer Id Required'
                                 })
                               }
+                              if(!name)
+                                {
+                                  return res.status(400).json({
+                                       success : false ,
+                                       message : 'name Required'
+                                  })
+                                }
+
+                                
+                              if(!email)
+                                {
+                                  return res.status(400).json({
+                                       success : false ,
+                                       message : 'email Required'
+                                  })
+                                }
+                              if(!phone_no)
+                                {
+                                  return res.status(400).json({
+                                       success : false ,
+                                       message : 'phone_no Required'
+                                  })
+                                }
+                              if(!address)
+                                {
+                                  return res.status(400).json({
+                                       success : false ,
+                                       message : 'address Required'
+                                  })
+                                }
+
 
                               // check for customer 
                               const customer = await customer_Model.findOne({ customer_id  })
@@ -625,11 +677,23 @@ const engg_otpGenerate = async ( req , res )=> {
                                          message : 'Customer not Exist'
                                       })                                
                               }
-
-                                 customer.name = name 
-                                 customer.email = email
-                                 customer.phone_no = phone_no
-                                 customer.address = address
+                                    if(name)
+                                    {
+                                        customer.name = name
+                                    }
+                                    if(email)
+                                    {
+                                        customer.email = email
+                                    }
+                                    if(phone_no)
+                                    {
+                                        customer.phone_no = phone_no
+                                    }
+                                    if(address)
+                                    {
+                                        customer.address = address
+                                    }                             
+                              
 
                                  if(req.file)
                                  {
@@ -639,7 +703,8 @@ const engg_otpGenerate = async ( req , res )=> {
                                   await customer.save()
                                   return res.status(200).json({
                                      success : true ,
-                                     message : 'Details Updated Successfully'
+                                     message : 'Details Updated Successfully',
+                                     customer : customer
                                   })
 
                                   
@@ -652,6 +717,45 @@ const engg_otpGenerate = async ( req , res )=> {
                     }
               }
 
+    
+
+              // Api for get particular customer details
+              const get_customer = async( req , res )=> {
+                   try {
+                          const customer_id = req.params.customer_id
+                    // check for customer id
+                    if(!customer_id)
+                    {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Customer Id Required'
+                        })
+                    }
+
+                    // check for customer
+                    const customer = await customer_Model.findOne({ customer_id : customer_id })
+                    if(!customer)
+                    {
+
+                        return res.status(400).json({
+                              success : false ,
+                              message : 'Customer Not found'
+                        })
+                    }
+
+                    return res.status(200).json({
+                          success : true ,
+                          message : 'Customer Details',
+                          detail : customer
+                    })
+                   } catch (error) {
+                      return res.status(500).json({
+                           success : false ,
+                           message : 'Server error',
+                           error_message : error.message
+                      })
+                   }
+              }
    
 
                                                                 /* Customer EnqUiry Section */
@@ -662,7 +766,7 @@ const engg_otpGenerate = async ( req , res )=> {
                 try {
                     const customer_id = req.params.customer_id;
                     const { services, customer_name, customer_email, customer_phone_no, customer_address, subject, message } = req.body;
-            
+
                     // Check for customer_id
                     if (!customer_id) {
                         return res.status(400).json({ success: false, message: 'Customer Id Required' });
@@ -716,22 +820,18 @@ const engg_otpGenerate = async ( req , res )=> {
                         });
                     }
             
-                    // Validate services and collect service details
-                    const serviceDetails = [];
-                    for (const service of services) {
-                        const serviceData = await services_model.findOne({ _id: service.service_id });
+                                // Validate services and collect service details
+                    const serviceDetails = await Promise.all(services.map(async (service_id) => {
+                        const serviceData = await services_model.findOne({ _id: service_id }); // service_id is already a string here
                         if (!serviceData) {
-                            return res.status(400).json({
-                                success: false,
-                                message: `Service Not Found for ID: ${service.service_id}`
-                            });
+                            throw new Error(`Service Not Found for ID: ${service_id}`);
                         }
-                        serviceDetails.push({
-                            service_id: service.service_id,
+                        return {
+                            service_id: serviceData._id, // store the ObjectId directly
                             service_name: serviceData.service_name,
-                            service_price : serviceData.service_price
-                        });
-                    }
+                            service_price: serviceData.service_price
+                        };
+                    }));
             
                     const randomNumber = generateRandomNumber(4);
                     const Enq_no = `ENQ${randomNumber}`;
@@ -805,7 +905,8 @@ const engg_otpGenerate = async ( req , res )=> {
             
                     return res.status(200).json({
                         success: true,
-                        message: `New Enquiry Generated for services: ${serviceDetails.map(service => service.service_name).join(', ')}`
+                        message: `New Enquiry Generated for services: ${serviceDetails.map(service => service.service_name).join(', ')}`,
+                        new_enq: new_enq
                     });
             
                 } catch (error) {
@@ -1297,6 +1398,7 @@ const engg_otpGenerate = async ( req , res )=> {
                         success: false,
                         message: `Service not found for Id: ${service.service_id}`
                     });
+
                 }
                 serviceDetails.push({
                     service_id: serviceData._id,
@@ -1308,7 +1410,6 @@ const engg_otpGenerate = async ( req , res )=> {
             // Append new services to existing services
             assign_engg_section.Bill[0].total_Bill = bill.total_bill_amount
             assign_engg_section.Bill[0].services = [...assign_engg_section.Bill[0].services, ...serviceDetails];
-
         }
            
             await assign_engg_section.save()
@@ -1372,6 +1473,19 @@ const engg_otpGenerate = async ( req , res )=> {
                             })
                         }
 
+                          // check for customer
+
+                         const customer = await customer_Model.findOne({ 
+                            customer_id : customer_id })
+
+                            if(!customer)
+                            {
+                                return res.status(400).json({
+                                       success : false ,
+                                       message : `No Customer found for the given customer Id : ${customer_id}`
+                                })
+                            }
+
                            // Check if the rating is within the valid range
                             if (rating < 0 || rating > 5) {
                                 return res.status(400).json({
@@ -1428,7 +1542,7 @@ module.exports = {
     engineer_login , update_Enginner_detail , change_Engg_password , 
     customer_signup ,  customer_login , update_customer ,
     generate_enq , get_cus_enquiry , get_all_enquiry_of_engineer ,
-    update_cus_bill ,
+    update_cus_bill , get_customer ,
     give_engineer_rating , engg_otpGenerate , engg_verify_otp ,
     engg_reset_password
 

@@ -23,6 +23,8 @@ const contact_us_Model = require('../models/contact_us')
 const cms_contact_us_details_model = require('../models/cms_contact_details')
 const cms_contact_for_inquiry_Model = require('../models/cms_contact_for_inquiry')
 const cms_contact_our_location_Model = require('../models/cms_contact_our_location')
+const cms_about_us_Model = require('../models/cms_about_us_model')
+const cms_about_us_our_team_model = require('../models/cms_about_our_team')
 
 
                                                  /* Admin Panel */
@@ -904,8 +906,12 @@ await admin.save();
                                  message : 'Service Already Exist'
                             })
                         }
-
-                        const icon = req.file.filename
+                             let icon = ''
+                            if(req.file)
+                            {
+                                 icon = req.file.filename
+                            }
+                     
                         // add new service
                          const new_service = new services_model({
                             service_name , service_price , service_description , service_icon : icon
@@ -2609,9 +2615,7 @@ const get_cms_contact_our_location= async( req , res )=> {
                       Details : {
                         Heading : get_details.Heading,
                         Description : get_details.Description,
-                       
-
-       
+                             
                         
                       }
                 })
@@ -2695,6 +2699,289 @@ const get_cms_contact_our_location= async( req , res )=> {
                    }
              }
 
+
+    // Api for cms about section
+    const cms_about_us_section = async( req , res )=> {
+        try {
+              const { Heading_1 , Description_1 ,
+                Heading_2 , Description_2,
+                Heading_3 , Description_3,
+                Heading_4 , Description_4,
+                Heading_5 , Description_5
+               } = req.body
+              // check for exist details
+                 const exist_detail = await cms_about_us_Model.findOne({ })
+                 if(exist_detail)
+                 {
+                        exist_detail.Heading_1 = Heading_1
+                        exist_detail.Description_1 = Description_1
+                        exist_detail.Heading_2 = Heading_2
+                        exist_detail.Description_2 = Description_2
+                        exist_detail.Heading_3 = Heading_3
+                        exist_detail.Description_3 = Description_3
+                        exist_detail.Heading_4 = Heading_4
+                        exist_detail.Description_4 = Description_4
+                        exist_detail.Heading_5 = Heading_5
+                        exist_detail.Description_5 = Description_5
+
+                                    // Update images if they exist
+                        const files = req.files || [];
+                        files.forEach((file, index) => {
+                            exist_detail[`image_${index + 1}`] = file.filename;
+                        });
+                        
+    
+                        await exist_detail.save()
+                        return res.status(200).json({
+                               success : true ,
+                               message : 'Details Updated Successfully'
+                        })
+                 }
+    
+                 else
+                 {
+                       // check for required fields
+                        
+                       if(!Heading_1)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading 1 Required'
+                        })
+                       }
+    
+                       if(!Description_1)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description 1 Required'
+                        })
+                       }
+                        
+                       if(!Heading_2)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading 2 Required'
+                        })
+                       }
+    
+                       if(!Description_2)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description2 Required'
+                        })
+                       }
+                        
+                       if(!Heading_3)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading 3 Required'
+                        })
+                       }
+    
+                       if(!Description_3)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description 3 Required'
+                        })
+                       }
+                        
+                       if(!Heading_4)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading 4 Required'
+                        })
+                       }
+    
+                       if(!Description_4)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description 4 Required'
+                        })
+                       }
+                       if(!Heading_5)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Heading 5 Required'
+                        })
+                       }
+    
+                       if(!Description_5)
+                       {
+                        return res.status(400).json({
+                               success : false ,
+                               message : 'Description 5 Required'
+                        })
+                       }
+                                    // Process file uploads
+                        const files = req.files || [];
+                        if (files.length < 3) {
+                            return res.status(400).json({
+                            success: false,
+                            message: 'Please upload all required images'
+                            });
+                        }
+      
+              const imageFiles = files.map(file => file.filename);
+                          
+                       const new_data = new cms_about_us_Model({
+                        Heading_1 , Description_1 ,
+                        Heading_2 , Description_2,
+                        Heading_3 , Description_3,
+                        Heading_4 , Description_4,
+                        Heading_5  , Description_5,
+                        
+                            image_1: imageFiles[0],
+                        
+                            image_2: imageFiles[1],
+                          
+                            image_3: imageFiles[2],
+                                        
+                       })
+                       await new_data.save()
+    
+                       return res.status(200).json({
+                             success : true ,
+                             message : 'New Details added Successfully'
+                       })
+    
+                 }
+        } catch (error) {
+             return res.status(500).json({
+                   success : false ,
+                   message : 'Server error',
+                   error_message : error.message
+             })
+        }
+    }
+
+
+        // Api for get about us section
+        const get_cms_about_us_section= async( req , res )=> {
+            try {
+                        // check for details
+                        const get_details = await cms_about_us_Model.findOne({ })
+                        if(!get_details)
+                        {
+                            return res.status(400).json({
+                                  success : false ,
+                                  message : 'No Details found'
+                            })
+                        }
+        
+                        return res.status(200).json({
+                              success : true ,
+                              message : 'cms_About us Details',
+                              Details : {
+                                Heading_1 : get_details.Heading_1,
+                                Description_1 : get_details.Description_1,
+                                image_1 : get_details.image_1,
+                                image_2 : get_details.image_2,
+                                Heading_2 : get_details.Heading_2,
+                                Description_2 : get_details.Description_2,
+                                image_3 : get_details.image_3,
+                               
+                                Heading_3 : get_details.Heading_3,
+                                Description_3 : get_details.Description_3,
+                                Heading_4 : get_details.Heading_4,
+                                Description_4 : get_details.Description_4,
+                              
+                                Heading_5 : get_details.Heading_5,
+                                Description_5 : get_details.Description_5,
+                                     
+                                
+                              }
+                        })
+            } catch (error) {
+                return res.status(500).json({
+                    success : false ,
+                    message : 'Server error',
+                    error_message : error.message
+              })
+            }
+        }
+
+
+           // Api for cms about us our team
+           const cms_about_our_team = async ( req , res )=> {
+                 try {
+                       const { name , designation  } = req.body
+
+                       if(!name)
+                       {
+                        return res.status(400).json({
+                              success : false ,
+                              message : 'Name is Required'
+                        })
+                       }
+
+                       if(!designation)
+                       {
+                        return res.status(400).json({
+                              success : false ,
+                              message : 'Designation is Required'
+                        })
+                       }
+
+                        const profile_image = req.file.filename
+
+                        const newData = new cms_about_us_our_team_model({
+                               name ,
+                               designation,
+                               profile_image
+                        })
+
+                        await newData.save()
+
+                        return res.status(200).json({
+                               success : true ,
+                               message : 'New Details Added successfully'
+                        })
+                          
+                 } catch (error) {
+                      return res.status(500).json({
+                          success : false ,
+                          message : 'Server error',
+                          error_message : error.message
+                      })
+                 }
+           }
+
+           const get_cms_about_our_team = async( req , res )=> {
+            try {
+                        // check for details
+                        const get_details = await cms_about_us_our_team_model.find({ }).sort({ createdAt : -1 }).lean()
+                        if(!get_details)
+                        {
+                            return res.status(400).json({
+                                  success : false ,
+                                  message : 'No Details found'
+                            })
+                        }
+        
+                        return res.status(200).json({
+                              success : true ,
+                              message : 'cms our team Details',
+                              Details : get_details
+                        })
+            } catch (error) {
+                return res.status(500).json({
+                    success : false ,
+                    message : 'Server error',
+                    error_message : error.message
+              })
+            }
+        }
+
+
+
 module.exports = {
     login , getadmin , updateAdmin , change_admin_password ,
     otpGenerate , verify_otp , reset_password ,
@@ -2720,5 +3007,6 @@ module.exports = {
     //contact us 
     contact_us , get_all_contact_us_inq , cms_contact_us_details ,
     get_cms_contact_us_details , cms_contact_for_inquiry , get_cms_contactof_inquiry ,
-    cms_contact_our_location , get_cms_contact_our_location
+    cms_contact_our_location , get_cms_contact_our_location , cms_about_us_section ,
+    get_cms_about_us_section , cms_about_our_team , get_cms_about_our_team
 } 

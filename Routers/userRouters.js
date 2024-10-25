@@ -33,6 +33,8 @@ router.post('/customer_signup', upload.single('profileImage'), userController.cu
 router.post('/customer_login' , userController.customer_login)
 // Api for update_customer
 router.put('/update_customer/:customer_id', upload.single('profileImage'), userController.update_customer)
+// Api for get_customer
+router.get('/get_customer/:customer_id', userController.get_customer)
 
   
 

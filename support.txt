@@ -1,0 +1,87 @@
+const generate_enq = async (req, res) => {
+    try {
+        const customer_id = req.params.customer_id;
+        let { services, customer_name, customer_email, customer_phone_no, customer_address, subject, message } = req.body;
+
+        // Convert flat service IDs to objects
+        services = services.map(service_id => ({ service_id }));
+
+        // Check for customer_id
+        if (!customer_id) {
+            return res.status(400).json({ success: false, message: 'Customer Id Required' });
+        }
+
+        // Check for customer
+        const customer = await customer_Model.findOne({ customer_id });
+        if (!customer) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer Not Exist'
+            });
+        }
+
+        // Check for required fields
+        if (!services || services.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one service is required'
+            });
+        }
+
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                message: 'Message Required'
+            });
+        }
+        if (!customer_name) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer Name Required'
+            });
+        }
+        if (!customer_email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer Email Required'
+            });
+        }
+        if (!customer_phone_no) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer Phone Number Required'
+            });
+        }
+        if (!customer_address) {
+            return res.status(400).json({
+                success: false,
+                message: 'Customer Address Required'
+            });
+        }
+
+        // Validate services and collect service details
+        const serviceDetails = [];
+        for (const service of services) {
+            const serviceData = await services_model.findOne({ _id: service.service_id });
+            if (!serviceData) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Service Not Found for ID: ${service.service_id}`
+                });
+            }
+            serviceDetails.push({
+                service_id: service.service_id,
+                service_name: serviceData.service_name,
+                service_price: serviceData.service_price
+            });
+        }
+
+        // Rest of the code remains unchanged...
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error_message: error.message
+        });
+    }
+};
